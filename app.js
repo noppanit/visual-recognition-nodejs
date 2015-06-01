@@ -24,16 +24,22 @@ var express = require('express'),
   validator = require('validator'),
   watson = require('watson-developer-cloud'),
   extend = require('util')._extend,
-  fs = require('fs');
+  fs = require('fs'),
+  watsonPicture = require('./lib/twitter');
+
+require('dotenv').load();
 
 // Bootstrap application settings
 require('./config/express')(app);
 
+var username = process.env.USERNAME || '<username>';
+var password = process.env.PASSWORD || '<password>';
+
 // if bluemix credentials exists, then override local
 var credentials = extend({
   version: 'v1',
-  username: '<username>',
-  password: '<password>'
+  username: username,
+  password: password
 }, bluemix.getServiceCreds('visual_recognition')); // VCAP_SERVICES
 
 // Create the service wrapper
@@ -41,7 +47,12 @@ var visualRecognition = watson.visual_recognition(credentials);
 
 // render index page
 app.get('/', function(req, res) {
-  res.render('index');
+	new watsonPicture().searchForAPicture(function(image) {
+		if(image.indexOf('//') === 0) {
+			image = image.replace('\/\/','http://');
+		}
+		res.render('index', { imageOfTheDay : image });
+	});
 });
 
 app.post('/', function(req, res) {
